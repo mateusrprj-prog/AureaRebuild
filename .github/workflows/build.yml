@@ -16,7 +16,7 @@ jobs:
 
       - name: Extract project ZIP
         run: |
-          unzip -q AureaRebuild-GitHub-Build.zip -d project
+          unzip -q AureaRebuild-GitHub-BuildFIX1.zip -d project
           cd project
 
       - name: Install XcodeGen
