@@ -1,0 +1,52 @@
+name: Build unsigned IPA
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-14
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Extract project ZIP
+        run: |
+          unzip -q AureaRebuild-GitHub-Build.zip -d project
+          cd project
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        working-directory: project
+        run: xcodegen generate --spec project.yml
+
+      - name: Build unsigned archive
+        working-directory: project
+        run: |
+          xcodebuild archive \
+            -project AureaRebuild.xcodeproj \
+            -scheme AureaRebuild \
+            -configuration Release \
+            -sdk iphoneos \
+            -archivePath "$PWD/build/AureaRebuild.xcarchive" \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY=""
+
+      - name: Create IPA
+        working-directory: project
+        run: |
+          rm -rf Payload AureaRebuild-unsigned.ipa
+          mkdir Payload
+          cp -R build/AureaRebuild.xcarchive/Products/Applications/AureaRebuild.app Payload/
+          /usr/bin/ditto -c -k --sequesterRsrc --keepParent Payload AureaRebuild-unsigned.ipa
+
+      - name: Upload IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: AureaRebuild-unsigned-ipa
+          path: project/AureaRebuild-unsigned.ipa
+          if-no-files-found: error
